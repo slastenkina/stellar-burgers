@@ -1,22 +1,43 @@
-import { FC, useMemo } from 'react';
+import { FC, useMemo, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { fetchIngredients, createOrder } from '../../slices/burgersSlice';
 import { TConstructorIngredient } from '@utils-types';
 import { BurgerConstructorUI } from '@ui';
+import { RootState, useDispatch } from '../../services/store'; // Импортируем тип состояния
+import { Preloader } from '@ui';
 
 export const BurgerConstructor: FC = () => {
   /** TODO: взять переменные constructorItems, orderRequest и orderModalData из стора */
-  const constructorItems = {
-    bun: {
-      price: 0
-    },
-    ingredients: []
-  };
+  const dispatch = useDispatch();
 
-  const orderRequest = false;
+  // Получаем данные из стора
+  const { ingredients, loading, error, order } = useSelector(
+    (state: RootState) => state.data
+  );
+  // Селектор для конструктора ингредиентов
+  const constructorItems = useMemo(() => {
+    const bun = ingredients.find((item) => item.type === 'bun') || null;
+    const otherIngredients = ingredients.filter((item) => item.type !== 'bun');
+    return {
+      bun,
+      ingredients: otherIngredients
+    };
+  }, [ingredients]);
 
-  const orderModalData = null;
+  const orderRequest = loading; // Используем статус загрузки как признак запроса
+  const orderModalData = order; // Используем текущий заказ для модального окна
+
+  useEffect(() => {
+    dispatch(fetchIngredients());
+  }, [dispatch]);
 
   const onOrderClick = () => {
     if (!constructorItems.bun || orderRequest) return;
+    const ingredientIds = [
+      constructorItems.bun._id, // Добавляем булку
+      ...constructorItems.ingredients.map((item) => item._id) // И другие ингредиенты
+    ];
+    dispatch(createOrder(ingredientIds)); // Отправляем заказ
   };
   const closeOrderModal = () => {};
 
@@ -30,7 +51,15 @@ export const BurgerConstructor: FC = () => {
     [constructorItems]
   );
 
-  return null;
+  // Обработаем ошибку (можно вывести сообщение об ошибке)
+  if (error) {
+    return <div>Ошибка: {error}</div>;
+  }
+
+  // Показываем индикатор загрузки, пока идет запрос
+  if (loading && ingredients.length === 0) {
+    return <Preloader />;
+  }
 
   return (
     <BurgerConstructorUI
