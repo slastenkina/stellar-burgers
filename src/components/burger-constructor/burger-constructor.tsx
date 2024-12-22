@@ -1,64 +1,68 @@
 import { FC, useMemo, useEffect } from 'react';
-import { useSelector } from 'react-redux';
 import { fetchIngredients, createOrder } from '../../slices/burgersSlice';
 import { TConstructorIngredient } from '@utils-types';
 import { BurgerConstructorUI } from '@ui';
-import { RootState, useDispatch } from '../../services/store'; // Импортируем тип состояния
+import { RootState, useDispatch, useSelector } from '../../services/store'; // Импортируем тип состояния
 import { Preloader } from '@ui';
 
 export const BurgerConstructor: FC = () => {
   /** TODO: взять переменные constructorItems, orderRequest и orderModalData из стора */
   const dispatch = useDispatch();
 
-  // Получаем данные из стора
-  const { ingredients, loading, error, order } = useSelector(
-    (state: RootState) => state.data
+  // Селектор для данных
+  const { bun, ingredients, loading, error, order } = useSelector(
+    (state: RootState) => ({
+      bun: state.data.bun,
+      ingredients: state.data.ingredients,
+      loading: state.data.loading,
+      error: state.data.error,
+      order: state.data.order
+    })
   );
-  // Селектор для конструктора ингредиентов
-  const constructorItems = useMemo(() => {
-    const bun = ingredients.find((item) => item.type === 'bun') || null;
-    const otherIngredients = ingredients.filter((item) => item.type !== 'bun');
-    return {
-      bun,
-      ingredients: otherIngredients
-    };
-  }, [ingredients]);
 
-  const orderRequest = loading; // Используем статус загрузки как признак запроса
-  const orderModalData = order; // Используем текущий заказ для модального окна
+  // Переменные для структурирования
+  const constructorItems = { bun, ingredients }; // Все ингредиенты для конструктора
+  const orderRequest = loading; // Индикатор загрузки
+  const orderModalData = order; // Данные заказа
 
   useEffect(() => {
+    // Загружаем ингредиенты при монтировании компонента
+    console.log('Инициализация fetchIngredients');
     dispatch(fetchIngredients());
   }, [dispatch]);
 
   const onOrderClick = () => {
-    if (!constructorItems.bun || orderRequest) return;
+    if (!bun || loading) return;
     const ingredientIds = [
-      constructorItems.bun._id, // Добавляем булку
-      ...constructorItems.ingredients.map((item) => item._id) // И другие ингредиенты
+      bun._id,
+      ...ingredients.map((ingredient) => ingredient._id),
+      bun._id
     ];
-    dispatch(createOrder(ingredientIds)); // Отправляем заказ
+    dispatch(createOrder(ingredientIds));
   };
-  const closeOrderModal = () => {};
 
-  const price = useMemo(
-    () =>
-      (constructorItems.bun ? constructorItems.bun.price * 2 : 0) +
-      constructorItems.ingredients.reduce(
-        (s: number, v: TConstructorIngredient) => s + v.price,
-        0
-      ),
-    [constructorItems]
-  );
+  const closeOrderModal = () => {
+    // Логика закрытия модального окна
+  };
 
-  // Обработаем ошибку (можно вывести сообщение об ошибке)
-  if (error) {
-    return <div>Ошибка: {error}</div>;
-  }
+  const price = useMemo(() => {
+    const bunPrice = bun ? bun.price * 2 : 0;
+    const ingredientsPrice = ingredients.reduce(
+      (sum: number, ingredient: TConstructorIngredient) =>
+        sum + ingredient.price,
+      0
+    );
+    return bunPrice + ingredientsPrice;
+  }, [bun, ingredients]);
 
   // Показываем индикатор загрузки, пока идет запрос
   if (loading && ingredients.length === 0) {
     return <Preloader />;
+  }
+
+  // Обработаем ошибку (можно вывести сообщение об ошибке)
+  if (error) {
+    return <div>Ошибка загрузки: {error}</div>;
   }
 
   return (

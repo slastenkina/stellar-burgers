@@ -19,6 +19,8 @@ import { AppHeader, Modal, IngredientDetails, OrderInfo } from '@components';
 
 import { useDispatch, useSelector } from '../../services/store';
 
+import { fetchIngredients } from '../../slices/burgersSlice';
+
 // Заглушка для проверки авторизации (заменим на реальную логику позже)
 const isAuthenticated = false;
 
@@ -49,11 +51,15 @@ export const App: React.FC = () => {
     navigate(-1);
   };
 
+  useEffect(() => {
+    dispatch(fetchIngredients());
+  }, [dispatch]);
+
   return (
     <div className={styles.app}>
       <AppHeader />
 
-      <Routes>
+      <Routes location={backgroundLocation || location}>
         {/* Основные маршруты */}
         <Route path='/' element={<ConstructorPage />} />
         <Route path='/feed' element={<Feed />} />

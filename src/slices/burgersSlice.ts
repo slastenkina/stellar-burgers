@@ -45,6 +45,7 @@ export const fetchFeeds = createAsyncThunk('data/fetchFeeds', async () =>
 // Типы состояний
 interface DataState {
   ingredients: TConstructorIngredient[];
+  ingredient: TIngredient[];
   orders: TOrder[];
   order: TOrder | null;
   loading: boolean;
@@ -63,7 +64,8 @@ const initialState: DataState = {
   user: {
     name: '',
     email: ''
-  }
+  },
+  ingredient: []
 };
 
 // Создание слайса
@@ -94,6 +96,28 @@ const burgersSlice = createSlice({
       state.ingredients = state.ingredients.filter(
         (ingredient) => ingredient.id !== action.payload
       );
+    },
+    moveIngredientUp(state, action: PayloadAction<string>) {
+      const id = action.payload;
+      const index = state.ingredients.findIndex(
+        (ingredient) => ingredient.id === id
+      );
+      if (index > 0) {
+        const temp = state.ingredients[index];
+        state.ingredients[index] = state.ingredients[index - 1];
+        state.ingredients[index - 1] = temp;
+      }
+    },
+    moveIngredientDown(state, action: PayloadAction<string>) {
+      const id = action.payload;
+      const index = state.ingredients.findIndex(
+        (ingredient) => ingredient.id === id
+      );
+      if (index >= 0 && index < state.ingredients.length - 1) {
+        const temp = state.ingredients[index];
+        state.ingredients[index] = state.ingredients[index + 1];
+        state.ingredients[index + 1] = temp;
+      }
     }
   },
   extraReducers: (builder) => {
@@ -104,12 +128,9 @@ const burgersSlice = createSlice({
       .addCase(
         fetchIngredients.fulfilled,
         (state, action: PayloadAction<TIngredient[]>) => {
-          state.loading = false; // Загрузка завершена
-          // Преобразуем TIngredient в TConstructorIngredient, добавив id
-          state.ingredients = action.payload.map((ingredient) => ({
-            ...ingredient,
-            id: ingredient._id // Дополняем объект полем id
-          }));
+          console.log('Загруженные ингредиенты:', action.payload);
+          state.loading = false;
+          state.ingredient = action.payload;
         }
       )
       .addCase(fetchIngredients.rejected, (state, action) => {
@@ -167,5 +188,11 @@ const burgersSlice = createSlice({
   }
 });
 
-export const { setBun, addIngredient, removeIngredient } = burgersSlice.actions;
+export const {
+  setBun,
+  addIngredient,
+  removeIngredient,
+  moveIngredientUp,
+  moveIngredientDown
+} = burgersSlice.actions;
 export default burgersSlice.reducer;
