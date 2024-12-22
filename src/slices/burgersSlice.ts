@@ -26,6 +26,12 @@ export const fetchIngredients = createAsyncThunk(
   async () => getIngredientsApi()
 );
 
+// Получение одного заказа
+export const fetchOrder = createAsyncThunk(
+  'data/fetchOrder',
+  async (data: string[]) => orderBurgerApi(data)
+);
+
 // Получение всех заказов
 export const fetchOrders = createAsyncThunk('data/fetchOrders', async () =>
   getOrdersApi()
@@ -52,6 +58,8 @@ interface DataState {
   error: string | null;
   bun: TIngredient | null;
   user: TUser;
+  totalOrders: number;
+  totalToday: number;
 }
 
 const initialState: DataState = {
@@ -65,7 +73,9 @@ const initialState: DataState = {
     name: '',
     email: ''
   },
-  ingredient: []
+  ingredient: [],
+  totalOrders: 0,
+  totalToday: 0
 };
 
 // Создание слайса
@@ -128,7 +138,6 @@ const burgersSlice = createSlice({
       .addCase(
         fetchIngredients.fulfilled,
         (state, action: PayloadAction<TIngredient[]>) => {
-          console.log('Загруженные ингредиенты:', action.payload);
           state.loading = false;
           state.ingredient = action.payload;
         }
@@ -179,6 +188,8 @@ const burgersSlice = createSlice({
         (state, action: PayloadAction<TOrdersData>) => {
           state.loading = false;
           state.orders = action.payload.orders;
+          state.totalOrders = action.payload.total;
+          state.totalToday = action.payload.totalToday;
         }
       )
       .addCase(fetchFeeds.rejected, (state, action) => {

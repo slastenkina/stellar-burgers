@@ -19,12 +19,12 @@ import { AppHeader, Modal, IngredientDetails, OrderInfo } from '@components';
 
 import { useDispatch, useSelector } from '../../services/store';
 
-import { fetchIngredients } from '../../slices/burgersSlice';
+import { fetchIngredients, fetchFeeds } from '../../slices/burgersSlice';
 
 // Заглушка для проверки авторизации (заменим на реальную логику позже)
 const isAuthenticated = false;
 
-// Компонент для защиты маршрутов
+// Компонент для защиты маршрутов (дописать и перенести отдельно)
 import { FC, ReactNode } from 'react';
 
 type ProtectedRouteProps = {
@@ -52,6 +52,7 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
+    dispatch(fetchFeeds());
     dispatch(fetchIngredients());
   }, [dispatch]);
 
@@ -63,6 +64,8 @@ export const App: React.FC = () => {
         {/* Основные маршруты */}
         <Route path='/' element={<ConstructorPage />} />
         <Route path='/feed' element={<Feed />} />
+        <Route path='/feed/:number' element={<OrderInfo />} />
+        <Route path='/ingredients/:id' element={<IngredientDetails />} />
 
         {/* Защищенные маршруты */}
 
@@ -119,38 +122,42 @@ export const App: React.FC = () => {
             </ProtectedRoute>
           }
         />
+      </Routes>
 
-        {/* Динамические маршруты с модалками */}
-        <Route
-          path='/feed/:number'
-          element={
-            <Modal title='Детали заказа' onClose={handleModalClose}>
-              <OrderInfo />
-            </Modal>
-          }
-        />
-        <Route
-          path='/ingredients/:id'
-          element={
-            <Modal title='Детали ингредиента' onClose={handleModalClose}>
-              <IngredientDetails />
-            </Modal>
-          }
-        />
-        <Route
-          path='/profile/orders/:number'
-          element={
-            <ProtectedRoute>
+      {/* Динамические маршруты с модалками */}
+      {backgroundLocation && (
+        <Routes>
+          <Route
+            path='/feed/:number'
+            element={
               <Modal title='Детали заказа' onClose={handleModalClose}>
                 <OrderInfo />
               </Modal>
-            </ProtectedRoute>
-          }
-        />
+            }
+          />
+          <Route
+            path='/ingredients/:id'
+            element={
+              <Modal title='Детали ингредиента' onClose={handleModalClose}>
+                <IngredientDetails />
+              </Modal>
+            }
+          />
+          <Route
+            path='/profile/orders/:number'
+            element={
+              <ProtectedRoute>
+                <Modal title='Детали заказа' onClose={handleModalClose}>
+                  <OrderInfo />
+                </Modal>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* 404 */}
-        <Route path='*' element={<NotFound404 />} />
-      </Routes>
+          {/* 404 */}
+          <Route path='*' element={<NotFound404 />} />
+        </Routes>
+      )}
     </div>
   );
 };

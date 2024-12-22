@@ -27,7 +27,6 @@ export const BurgerConstructor: FC = () => {
 
   useEffect(() => {
     // Загружаем ингредиенты при монтировании компонента
-    console.log('Инициализация fetchIngredients');
     dispatch(fetchIngredients());
   }, [dispatch]);
 
