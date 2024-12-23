@@ -1,29 +1,36 @@
 import { FC, useMemo, useEffect } from 'react';
-import { fetchIngredients, createOrder } from '../../slices/burgersSlice';
+import {
+  fetchIngredients,
+  createOrder,
+  resetConstructor,
+  resetOrderModalData
+} from '../../slices/burgersSlice';
 import { TConstructorIngredient } from '@utils-types';
 import { BurgerConstructorUI } from '@ui';
 import { RootState, useDispatch, useSelector } from '../../services/store'; // Импортируем тип состояния
 import { Preloader } from '@ui';
+import { useNavigate } from 'react-router-dom';
 
 export const BurgerConstructor: FC = () => {
   /** TODO: взять переменные constructorItems, orderRequest и orderModalData из стора */
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   // Селектор для данных
-  const { bun, ingredients, loading, error, order } = useSelector(
-    (state: RootState) => ({
+  const { bun, ingredients, loading, error, orderRequest, orderModalData } =
+    useSelector((state: RootState) => ({
       bun: state.data.bun,
       ingredients: state.data.ingredients,
       loading: state.data.loading,
       error: state.data.error,
-      order: state.data.order
-    })
-  );
+      orderRequest: state.data.orderRequest,
+      orderModalData: state.data.orderModalData
+    }));
 
   // Переменные для структурирования
   const constructorItems = { bun, ingredients }; // Все ингредиенты для конструктора
-  const orderRequest = loading; // Индикатор загрузки
-  const orderModalData = order; // Данные заказа
+
+  const isLoggedIn = useSelector((state) => !!state.data.isLoggedIn);
 
   useEffect(() => {
     // Загружаем ингредиенты при монтировании компонента
@@ -37,11 +44,15 @@ export const BurgerConstructor: FC = () => {
       ...ingredients.map((ingredient) => ingredient._id),
       bun._id
     ];
+    if (!isLoggedIn) {
+      return navigate('/login');
+    }
     dispatch(createOrder(ingredientIds));
   };
 
   const closeOrderModal = () => {
-    // Логика закрытия модального окна
+    dispatch(resetConstructor());
+    dispatch(resetOrderModalData());
   };
 
   const price = useMemo(() => {

@@ -5,7 +5,15 @@ import {
   getOrdersApi,
   orderBurgerApi,
   getOrderByNumberApi,
-  TNewOrderResponse
+  TNewOrderResponse,
+  registerUserApi,
+  loginUserApi,
+  logoutApi,
+  refreshToken,
+  getUserApi,
+  updateUserApi,
+  TRegisterData,
+  TLoginData
 } from '@api';
 
 import {
@@ -18,18 +26,14 @@ import {
 
 import { v4 as uuidv4 } from 'uuid';
 
+import { setCookie } from '../utils/cookie';
+
 // Асинхронные Thunk-функции для запросов к API
 
 // Получение ингредиентов
 export const fetchIngredients = createAsyncThunk(
   'data/fetchIngredients',
   async () => getIngredientsApi()
-);
-
-// Получение одного заказа
-export const fetchOrder = createAsyncThunk(
-  'data/fetchOrder',
-  async (data: string[]) => orderBurgerApi(data)
 );
 
 // Получение всех заказов
@@ -48,6 +52,54 @@ export const fetchFeeds = createAsyncThunk('data/fetchFeeds', async () =>
   getFeedsApi()
 );
 
+// Регистрация пользователя
+export const fetchRegisterUser = createAsyncThunk(
+  'auth/registerUser',
+  async (data: TRegisterData) => registerUserApi(data)
+);
+
+// Авторизация пользователя
+export const fetchLoginUser = createAsyncThunk(
+  'auth/loginUser',
+  async (data: TLoginData) => {
+    const response = await loginUserApi(data); // Получаем ответ от API
+
+    // Проверяем, что ответ содержит токены
+    if (response.refreshToken && response.accessToken) {
+      // Сохраняем токены
+      localStorage.setItem('refreshToken', response.refreshToken);
+      setCookie('accessToken', response.accessToken);
+      return response; // Возвращаем данные с токенами
+    } else {
+      throw new Error('Failed to receive tokens');
+    }
+  }
+);
+
+// Выход пользователя
+export const fetchLogoutUser = createAsyncThunk('auth/logoutUser', async () => {
+  const response = await logoutApi(); // Сначала делаем запрос
+  localStorage.removeItem('refreshToken'); // Затем удаляем токен
+  return response;
+});
+
+// Обновление токенов
+export const refreshUserToken = createAsyncThunk(
+  'auth/refreshUserToken',
+  async () => refreshToken()
+);
+
+// Получение данных текущего пользователя
+export const fetchUser = createAsyncThunk('auth/fetchUser', async () =>
+  getUserApi()
+);
+
+// Обновление данных пользователя
+export const updateUser = createAsyncThunk(
+  'auth/updateUser',
+  async (data: Partial<TRegisterData>) => updateUserApi(data)
+);
+
 // Типы состояний
 interface DataState {
   ingredients: TConstructorIngredient[];
@@ -60,6 +112,10 @@ interface DataState {
   user: TUser;
   totalOrders: number;
   totalToday: number;
+  isAuthenticated: boolean;
+  isLoggedIn: boolean;
+  orderModalData: TOrder | null;
+  orderRequest: boolean;
 }
 
 const initialState: DataState = {
@@ -75,7 +131,11 @@ const initialState: DataState = {
   },
   ingredient: [],
   totalOrders: 0,
-  totalToday: 0
+  totalToday: 0,
+  isAuthenticated: false,
+  isLoggedIn: false,
+  orderModalData: null,
+  orderRequest: false
 };
 
 // Создание слайса
@@ -86,6 +146,10 @@ const burgersSlice = createSlice({
     resetConstructor(state) {
       state.bun = null;
       state.ingredients = [];
+    },
+    // Сбросить данные о заказе
+    resetOrderModalData(state) {
+      state.orderModalData = null;
     },
     setBun(state, action: PayloadAction<TIngredient | null>) {
       state.bun = action.payload;
@@ -128,6 +192,9 @@ const burgersSlice = createSlice({
         state.ingredients[index] = state.ingredients[index + 1];
         state.ingredients[index + 1] = temp;
       }
+    },
+    isLoggedIn(state) {
+      state.isLoggedIn = true;
     }
   },
   extraReducers: (builder) => {
@@ -163,20 +230,16 @@ const burgersSlice = createSlice({
       })
 
       .addCase(createOrder.pending, (state) => {
-        state.loading = true;
+        state.orderRequest = true;
       })
       // В слайсе обработка успешного выполнения createOrder
-      .addCase(
-        createOrder.fulfilled,
-        (state, action: PayloadAction<TNewOrderResponse>) => {
-          state.loading = false;
-          // Извлекаем order из payload
-          state.orders.push(action.payload.order); // Добавляем новый заказ
-        }
-      )
+      .addCase(createOrder.fulfilled, (state, action) => {
+        state.orderRequest = false;
+        state.orderModalData = action.payload.order;
+      })
 
       .addCase(createOrder.rejected, (state, action) => {
-        state.loading = false;
+        state.orderRequest = false;
         state.error = action.error.message || 'Ошибка создания заказа';
       })
 
@@ -195,15 +258,78 @@ const burgersSlice = createSlice({
       .addCase(fetchFeeds.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Ошибка загрузки данных';
+      })
+
+      // Регистрация пользователя
+      .addCase(fetchRegisterUser.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchRegisterUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.isAuthenticated = true;
+        state.isLoggedIn = true;
+        // state.user = action.payload.user;
+      })
+      .addCase(fetchRegisterUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Ошибка регистрации';
+      })
+
+      // Авторизация пользователя
+      .addCase(fetchLoginUser.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchLoginUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.isAuthenticated = true;
+        state.isLoggedIn = true;
+        state.user = action.payload.user;
+      })
+      .addCase(fetchLoginUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Ошибка авторизации';
+      })
+
+      // Выход пользователя
+      .addCase(fetchLogoutUser.fulfilled, (state) => {
+        state.isAuthenticated = false;
+        state.isLoggedIn = false;
+        state.user = { name: '', email: '' };
+      })
+
+      // Получение пользователя
+      .addCase(fetchUser.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.isAuthenticated = true;
+        state.user.name = action.payload.user.name;
+        state.user.email = action.payload.user.email;
+      })
+      .addCase(fetchUser.rejected, (state, action) => {
+        state.loading = false;
+        state.isAuthenticated = false;
+        state.isLoggedIn = true;
+        state.error =
+          action.error.message || 'Ошибка получения данных пользователя';
+      })
+
+      // Обновление данных пользователя
+      .addCase(updateUser.fulfilled, (state, action) => {
+        state.user = action.payload.user;
       });
   }
 });
 
 export const {
+  resetConstructor,
+  resetOrderModalData,
   setBun,
   addIngredient,
   removeIngredient,
   moveIngredientUp,
-  moveIngredientDown
+  moveIngredientDown,
+  isLoggedIn
 } = burgersSlice.actions;
 export default burgersSlice.reducer;

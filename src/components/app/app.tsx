@@ -15,31 +15,24 @@ import {
 import '../../index.css';
 import styles from './app.module.css';
 
-import { AppHeader, Modal, IngredientDetails, OrderInfo } from '@components';
+import {
+  AppHeader,
+  Modal,
+  IngredientDetails,
+  OrderInfo,
+  ProtectedRoute
+} from '@components';
 
 import { useDispatch, useSelector } from '../../services/store';
 
-import { fetchIngredients, fetchFeeds } from '../../slices/burgersSlice';
+import {
+  fetchIngredients,
+  fetchFeeds,
+  fetchUser,
+  isLoggedIn
+} from '../../slices/burgersSlice';
 
-// Заглушка для проверки авторизации (заменим на реальную логику позже)
-const isAuthenticated = false;
-
-// Компонент для защиты маршрутов (дописать и перенести отдельно)
-import { FC, ReactNode } from 'react';
-
-type ProtectedRouteProps = {
-  children: ReactNode;
-};
-
-export const ProtectedRoute: FC<ProtectedRouteProps> = ({ children }) => {
-  const isAuthenticated = true; // Пример проверки аутентификации
-
-  if (!isAuthenticated) {
-    return <div>Access Denied</div>;
-  }
-
-  return <>{children}</>;
-};
+import { deleteCookie, getCookie } from '../../utils/cookie';
 
 export const App: React.FC = () => {
   const dispatch = useDispatch();
@@ -68,11 +61,10 @@ export const App: React.FC = () => {
         <Route path='/ingredients/:id' element={<IngredientDetails />} />
 
         {/* Защищенные маршруты */}
-
         <Route
           path='/login'
           element={
-            <ProtectedRoute>
+            <ProtectedRoute onlyForGuests>
               <Login />
             </ProtectedRoute>
           }
@@ -81,7 +73,7 @@ export const App: React.FC = () => {
         <Route
           path='/register'
           element={
-            <ProtectedRoute>
+            <ProtectedRoute onlyForGuests>
               <Register />
             </ProtectedRoute>
           }
@@ -90,7 +82,7 @@ export const App: React.FC = () => {
         <Route
           path='/forgot-password'
           element={
-            <ProtectedRoute>
+            <ProtectedRoute onlyForGuests>
               <ForgotPassword />
             </ProtectedRoute>
           }
@@ -99,7 +91,7 @@ export const App: React.FC = () => {
         <Route
           path='/reset-password'
           element={
-            <ProtectedRoute>
+            <ProtectedRoute onlyForGuests>
               <ResetPassword />
             </ProtectedRoute>
           }
@@ -146,11 +138,9 @@ export const App: React.FC = () => {
           <Route
             path='/profile/orders/:number'
             element={
-              <ProtectedRoute>
-                <Modal title='Детали заказа' onClose={handleModalClose}>
-                  <OrderInfo />
-                </Modal>
-              </ProtectedRoute>
+              <Modal title='Детали заказа' onClose={handleModalClose}>
+                <OrderInfo />
+              </Modal>
             }
           />
 
