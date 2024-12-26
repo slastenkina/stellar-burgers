@@ -13,7 +13,7 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
   children,
   anonymous = false
 }) => {
-  const isLoggedIn = useSelector((state) => state.data.isLoggedIn);
+  const isLoggedIn = useSelector((state) => state.data.user);
   const isAuthenticated = useSelector((state) => state.data.isAuthenticated);
   const location = useLocation();
   const from = location.state?.from || '/';
