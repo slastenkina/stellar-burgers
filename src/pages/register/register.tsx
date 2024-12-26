@@ -1,21 +1,27 @@
 import { FC, SyntheticEvent, useState } from 'react';
 import { RegisterUI } from '@ui-pages';
-import { useDispatch, useSelector } from '../../services/store';
+import { useDispatch, useSelector, RootState } from '../../services/store';
 import { fetchRegisterUser } from '../../slices/burgersSlice';
+import { Preloader } from '@ui';
+import { useForm } from '../../hooks/useForm';
 
 export const Register: FC = () => {
-  const [userName, setUserName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null); // Для отображения ошибок
+  const { values, handleChange } = useForm({
+    userName: '',
+    email: '',
+    password: ''
+  });
 
+  const { error, loading } = useSelector((state: RootState) => state.data);
   const dispatch = useDispatch();
 
-  const { loading, error: apiError } = useSelector((state) => state.data); // Подключение к стору
+  const [localError, setLocalError] = useState<string | null>(null); // Локальное состояние для ошибок
+
+  const { userName, email, password } = values; // Деструктуризация значений формы
 
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
-    setError(null); // Сбрасываем локальную ошибку перед запросом
+    setLocalError(null); // Сбрасываем локальную ошибку перед запросом
 
     try {
       const resultAction = await dispatch(
@@ -31,22 +37,26 @@ export const Register: FC = () => {
         console.log('Registration successful:', resultAction.payload);
       } else if (fetchRegisterUser.rejected.match(resultAction)) {
         // Если произошла ошибка
-        setError(resultAction.error.message || 'Ошибка регистрации');
+        setLocalError(resultAction.error.message || 'Ошибка регистрации');
       }
     } catch (err) {
-      setError('Произошла непредвиденная ошибка');
+      setLocalError('Произошла непредвиденная ошибка');
     }
   };
 
+  if (loading) {
+    return <Preloader />;
+  }
+
   return (
     <RegisterUI
-      errorText={error || apiError || ''} // Отображение ошибок
+      errorText={localError || error || ''} // Отображение ошибок
       email={email}
       userName={userName}
       password={password}
-      setEmail={setEmail}
-      setPassword={setPassword}
-      setUserName={setUserName}
+      setEmail={handleChange} // Используем универсальный обработчик
+      setPassword={handleChange} // Используем универсальный обработчик
+      setUserName={handleChange} // Используем универсальный обработчик
       handleSubmit={handleSubmit}
     />
   );

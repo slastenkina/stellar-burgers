@@ -28,26 +28,31 @@ import { useDispatch, useSelector } from '../../services/store';
 import {
   fetchIngredients,
   fetchFeeds,
-  fetchUser,
-  isLoggedIn
+  isLoggedIn,
+  checkUserAuth
 } from '../../slices/burgersSlice';
-
-import { deleteCookie, getCookie } from '../../utils/cookie';
+import { getCookie, deleteCookie } from '../../utils/cookie';
 
 export const App: React.FC = () => {
   const dispatch = useDispatch();
   const location = useLocation();
   const navigate = useNavigate();
   const backgroundLocation = location.state?.background;
+  const token = getCookie('accessToken');
+  const isAuthenticated = useSelector((state) => state.data.isAuthenticated);
 
   const handleModalClose = () => {
     navigate(-1);
   };
 
   useEffect(() => {
+    dispatch(checkUserAuth());
+  }, []);
+
+  useEffect(() => {
     dispatch(fetchFeeds());
     dispatch(fetchIngredients());
-  }, [dispatch]);
+  }, []);
 
   return (
     <div className={styles.app}>
@@ -64,7 +69,7 @@ export const App: React.FC = () => {
         <Route
           path='/login'
           element={
-            <ProtectedRoute onlyForGuests>
+            <ProtectedRoute anonymous>
               <Login />
             </ProtectedRoute>
           }
@@ -73,7 +78,7 @@ export const App: React.FC = () => {
         <Route
           path='/register'
           element={
-            <ProtectedRoute onlyForGuests>
+            <ProtectedRoute anonymous>
               <Register />
             </ProtectedRoute>
           }
@@ -82,7 +87,7 @@ export const App: React.FC = () => {
         <Route
           path='/forgot-password'
           element={
-            <ProtectedRoute onlyForGuests>
+            <ProtectedRoute anonymous>
               <ForgotPassword />
             </ProtectedRoute>
           }
@@ -91,7 +96,7 @@ export const App: React.FC = () => {
         <Route
           path='/reset-password'
           element={
-            <ProtectedRoute onlyForGuests>
+            <ProtectedRoute anonymous>
               <ResetPassword />
             </ProtectedRoute>
           }
@@ -111,6 +116,14 @@ export const App: React.FC = () => {
           element={
             <ProtectedRoute>
               <ProfileOrders />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/profile/orders/:number'
+          element={
+            <ProtectedRoute>
+              <OrderInfo />
             </ProtectedRoute>
           }
         />

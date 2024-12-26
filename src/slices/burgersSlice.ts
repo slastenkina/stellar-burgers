@@ -5,7 +5,6 @@ import {
   getOrdersApi,
   orderBurgerApi,
   getOrderByNumberApi,
-  TNewOrderResponse,
   registerUserApi,
   loginUserApi,
   logoutApi,
@@ -26,36 +25,29 @@ import {
 
 import { v4 as uuidv4 } from 'uuid';
 
-import { setCookie } from '../utils/cookie';
+import { getCookie, setCookie } from '../utils/cookie';
 
 // Асинхронные Thunk-функции для запросов к API
 
 // Получение ингредиентов
 export const fetchIngredients = createAsyncThunk(
   'data/fetchIngredients',
-  async () => getIngredientsApi()
+  getIngredientsApi
 );
 
 // Получение всех заказов
-export const fetchOrders = createAsyncThunk('data/fetchOrders', async () =>
-  getOrdersApi()
-);
+export const fetchOrders = createAsyncThunk('data/fetchOrders', getOrdersApi);
 
 // Создание нового заказа
-export const createOrder = createAsyncThunk(
-  'data/createOrder',
-  async (ingredients: string[]) => orderBurgerApi(ingredients)
-);
+export const createOrder = createAsyncThunk('data/createOrder', orderBurgerApi);
 
 // Получение заказов
-export const fetchFeeds = createAsyncThunk('data/fetchFeeds', async () =>
-  getFeedsApi()
-);
+export const fetchFeeds = createAsyncThunk('data/fetchFeeds', getFeedsApi);
 
 // Регистрация пользователя
 export const fetchRegisterUser = createAsyncThunk(
   'auth/registerUser',
-  async (data: TRegisterData) => registerUserApi(data)
+  registerUserApi
 );
 
 // Авторизация пользователя
@@ -86,18 +78,40 @@ export const fetchLogoutUser = createAsyncThunk('auth/logoutUser', async () => {
 // Обновление токенов
 export const refreshUserToken = createAsyncThunk(
   'auth/refreshUserToken',
-  async () => refreshToken()
+  refreshToken
 );
 
 // Получение данных текущего пользователя
-export const fetchUser = createAsyncThunk('auth/fetchUser', async () =>
-  getUserApi()
-);
+// export const fetchUser = createAsyncThunk<TUser, void>(
+//   'auth/fetchUser',
+//   async () => {
+//     const response = await getUserApi(); // запрос к API
+//     return response.user; // возвращаем данные пользователя
+//   }
+// );
 
 // Обновление данных пользователя
-export const updateUser = createAsyncThunk(
-  'auth/updateUser',
-  async (data: Partial<TRegisterData>) => updateUserApi(data)
+export const updateUser = createAsyncThunk('auth/updateUser', updateUserApi);
+
+//Автологин
+export const checkUserAuth = createAsyncThunk(
+  'user/checkUserAuth',
+  async (__, { dispatch }) => {
+    const accessToken = getCookie('accessToken');
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (accessToken && refreshToken) {
+      try {
+        const response = await getUserApi(); // response имеет тип TUserResponse
+        dispatch(setUser(response.user)); // Передаем объект user в setUser
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      } finally {
+        dispatch(setIsAuthChecked(true));
+      }
+    } else {
+      dispatch(setIsAuthChecked(true));
+    }
+  }
 );
 
 // Типы состояний
@@ -109,7 +123,7 @@ interface DataState {
   loading: boolean;
   error: string | null;
   bun: TIngredient | null;
-  user: TUser;
+  user: TUser | null;
   totalOrders: number;
   totalToday: number;
   isAuthenticated: boolean;
@@ -125,10 +139,7 @@ const initialState: DataState = {
   loading: false,
   error: null,
   bun: null,
-  user: {
-    name: '',
-    email: ''
-  },
+  user: null,
   ingredient: [],
   totalOrders: 0,
   totalToday: 0,
@@ -143,6 +154,15 @@ const burgersSlice = createSlice({
   name: 'burgers',
   initialState,
   reducers: {
+    setUser(state, action: PayloadAction<TUser | null>) {
+      state.user = action.payload;
+    },
+    setIsAuthChecked(state, action: PayloadAction<boolean>) {
+      state.isAuthenticated = action.payload;
+    },
+    setIsLoggedIn(state, action: PayloadAction<boolean>) {
+      state.isLoggedIn = action.payload;
+    },
     resetConstructor(state) {
       state.bun = null;
       state.ingredients = [];
@@ -268,7 +288,6 @@ const burgersSlice = createSlice({
         state.loading = false;
         state.isAuthenticated = true;
         state.isLoggedIn = true;
-        // state.user = action.payload.user;
       })
       .addCase(fetchRegisterUser.rejected, (state, action) => {
         state.loading = false;
@@ -298,22 +317,19 @@ const burgersSlice = createSlice({
       })
 
       // Получение пользователя
-      .addCase(fetchUser.pending, (state) => {
-        state.loading = true;
-      })
-      .addCase(fetchUser.fulfilled, (state, action) => {
-        state.loading = false;
-        state.isAuthenticated = true;
-        state.user.name = action.payload.user.name;
-        state.user.email = action.payload.user.email;
-      })
-      .addCase(fetchUser.rejected, (state, action) => {
-        state.loading = false;
-        state.isAuthenticated = false;
-        state.isLoggedIn = true;
-        state.error =
-          action.error.message || 'Ошибка получения данных пользователя';
-      })
+      // .addCase(checkUserAuth.pending, (state) => {
+      //   state.loading = true;
+      // })
+      // .addCase(checkUserAuth.fulfilled, (state, action) => {
+      //   state.loading = false;
+      //   state.isAuthenticated = true;
+      //   state.isLoggedIn = true;
+      // })
+      // .addCase(checkUserAuth.rejected, (state, action) => {
+      //   state.loading = false;
+      //   state.error =
+      //     action.error.message || 'Ошибка получения данных пользователя';
+      // })
 
       // Обновление данных пользователя
       .addCase(updateUser.fulfilled, (state, action) => {
@@ -323,6 +339,8 @@ const burgersSlice = createSlice({
 });
 
 export const {
+  setUser,
+  setIsAuthChecked,
   resetConstructor,
   resetOrderModalData,
   setBun,

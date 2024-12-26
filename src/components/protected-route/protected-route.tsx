@@ -1,4 +1,4 @@
-// Компонент для защиты маршрутов (дописать и перенести отдельно)
+// Компонент для защиты маршрутов
 import { FC } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from '../../services/store';
@@ -6,24 +6,32 @@ import { Preloader } from '@ui';
 
 type ProtectedRouteProps = {
   children: React.ReactElement;
-  onlyForGuests?: boolean;
+  anonymous?: boolean;
 };
 
 export const ProtectedRoute: FC<ProtectedRouteProps> = ({
   children,
-  onlyForGuests = false
+  anonymous = false
 }) => {
-  const isAuthenticated = useSelector((state) => !!state.data.isAuthenticated); // Проверка авторизации
+  const isLoggedIn = useSelector((state) => state.data.isLoggedIn);
+  const isAuthenticated = useSelector((state) => state.data.isAuthenticated);
   const location = useLocation();
+  const from = location.state?.from || '/';
 
-  // Защита маршрутов только для авторизованных пользователей
-  if (!onlyForGuests && !isAuthenticated) {
-    return <Navigate to='/login' state={{ from: location }} replace />;
+  if (!isAuthenticated) {
+    return <Preloader />;
   }
 
-  // Защита маршрутов только для гостей (неавторизованных пользователей)
-  if (onlyForGuests && isAuthenticated) {
-    return <Navigate to='/' replace />;
+  // Если разрешен неавторизованный доступ, а пользователь авторизован...
+  if (anonymous && isLoggedIn) {
+    // ...то отправляем его на предыдущую страницу
+    return <Navigate to={from} />;
+  }
+
+  // Если требуется авторизация, а пользователь не авторизован...
+  if (!anonymous && !isLoggedIn) {
+    // ...то отправляем его на страницу логин
+    return <Navigate to='/login' state={{ from: location }} />;
   }
 
   return children;

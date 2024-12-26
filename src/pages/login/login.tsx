@@ -1,41 +1,69 @@
-import { FC, SyntheticEvent, useState } from 'react';
+import { FC, SyntheticEvent, useEffect } from 'react';
 import { LoginUI } from '@ui-pages';
 import { useDispatch, useSelector, RootState } from '../../services/store';
-import { fetchLoginUser } from '../../slices/burgersSlice';
-import { useNavigate } from 'react-router-dom';
+import { fetchLoginUser, checkUserAuth } from '../../slices/burgersSlice';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Preloader } from '@ui';
+import { useForm } from '../../hooks/useForm';
+import { setCookie, getCookie } from '../../utils/cookie';
 
 export const Login: FC = () => {
+  const location = useLocation();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { values, handleChange } = useForm({
+    email: '',
+    password: ''
+  });
 
   const dispatch = useDispatch();
-  const { error, loading, isLoggedIn } = useSelector(
+  const { error, loading, isLoggedIn, isAuthenticated } = useSelector(
     (state: RootState) => state.data
   );
+
+  // Проверяем авторизацию при загрузке компонента
+  useEffect(() => {
+    if (!isAuthenticated) {
+      dispatch(checkUserAuth());
+    }
+  }, [dispatch, isAuthenticated]);
+
+  // Предыдущий маршрут или корень сайта
+  const from = location.state?.from?.pathname || '/';
+
+  // Если пользователь уже авторизован, перенаправляем на предыдущую страницу
+  useEffect(() => {
+    if (isLoggedIn) {
+      navigate(from, { replace: true });
+    }
+  }, [isLoggedIn, navigate, from]);
 
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
 
     try {
-      // Выполняем вход через dispatch
-      await dispatch(fetchLoginUser({ email, password })).unwrap();
-
-      // После успешного логина перенаправляем пользователя на главную страницу
-      navigate('/', { replace: true }); // Перенаправление на главную
-      console.log('Логин успешен');
+      const result = await dispatch(fetchLoginUser(values)).unwrap();
+      // Сохраняем токены
+      console.log('Логин успешен:', result); // Логируем результат
+      setCookie('accessToken', result.accessToken, { path: '/' });
+      localStorage.setItem('refreshToken', result.refreshToken);
+      // Проверяем авторизацию после логина
+      dispatch(checkUserAuth());
     } catch (err) {
       console.error('Ошибка авторизации:', err);
     }
   };
 
+  if (loading) {
+    return <Preloader />;
+  }
+
   return (
     <LoginUI
       errorText={error || ''}
-      email={email}
-      setEmail={setEmail}
-      password={password}
-      setPassword={setPassword}
+      email={values.email}
+      setEmail={handleChange}
+      password={values.password}
+      setPassword={handleChange}
       handleSubmit={handleSubmit}
     />
   );
