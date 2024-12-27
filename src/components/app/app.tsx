@@ -50,7 +50,6 @@ export const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    dispatch(fetchFeeds());
     dispatch(fetchIngredients());
   }, []);
 

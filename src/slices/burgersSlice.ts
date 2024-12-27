@@ -34,9 +34,22 @@ export const fetchIngredients = createAsyncThunk(
   'data/fetchIngredients',
   getIngredientsApi
 );
-
 // Получение всех заказов
 export const fetchOrders = createAsyncThunk('data/fetchOrders', getOrdersApi);
+
+// Получение одного заказа
+export const fetchOrder = createAsyncThunk<TOrder, number>(
+  'orders/fetchOrder',
+  async (orderNumber, { rejectWithValue }) => {
+    const response = await getOrderByNumberApi(orderNumber);
+    const order = response.orders[0];
+    if (!order) {
+      return rejectWithValue('Заказ не найден.');
+    }
+
+    return order;
+  }
+);
 
 // Создание нового заказа
 export const createOrder = createAsyncThunk('data/createOrder', orderBurgerApi);
@@ -80,15 +93,6 @@ export const refreshUserToken = createAsyncThunk(
   'auth/refreshUserToken',
   refreshToken
 );
-
-// Получение данных текущего пользователя
-// export const fetchUser = createAsyncThunk<TUser, void>(
-//   'auth/fetchUser',
-//   async () => {
-//     const response = await getUserApi(); // запрос к API
-//     return response.user; // возвращаем данные пользователя
-//   }
-// );
 
 // Обновление данных пользователя
 export const updateUser = createAsyncThunk('auth/updateUser', updateUserApi);
@@ -249,6 +253,18 @@ const burgersSlice = createSlice({
         state.error = action.error.message || 'Ошибка загрузки заказов';
       })
 
+      .addCase(fetchOrder.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchOrder.fulfilled, (state, action) => {
+        state.loading = false;
+        state.order = action.payload;
+      })
+      .addCase(fetchOrder.rejected, (state, action) => {
+        state.loading = false;
+      })
+
       .addCase(createOrder.pending, (state) => {
         state.orderRequest = true;
       })
@@ -315,21 +331,6 @@ const burgersSlice = createSlice({
         state.isLoggedIn = false;
         state.user = { name: '', email: '' };
       })
-
-      // Получение пользователя
-      // .addCase(checkUserAuth.pending, (state) => {
-      //   state.loading = true;
-      // })
-      // .addCase(checkUserAuth.fulfilled, (state, action) => {
-      //   state.loading = false;
-      //   state.isAuthenticated = true;
-      //   state.isLoggedIn = true;
-      // })
-      // .addCase(checkUserAuth.rejected, (state, action) => {
-      //   state.loading = false;
-      //   state.error =
-      //     action.error.message || 'Ошибка получения данных пользователя';
-      // })
 
       // Обновление данных пользователя
       .addCase(updateUser.fulfilled, (state, action) => {
