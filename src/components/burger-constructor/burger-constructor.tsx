@@ -30,7 +30,7 @@ export const BurgerConstructor: FC = () => {
   // Переменные для структурирования
   const constructorItems = { bun, ingredients }; // Все ингредиенты для конструктора
 
-  const isLoggedIn = useSelector((state) => !!state.data.isLoggedIn);
+  const user = useSelector((state) => state.data.user);
 
   useEffect(() => {
     // Загружаем ингредиенты при монтировании компонента
@@ -44,7 +44,7 @@ export const BurgerConstructor: FC = () => {
       ...ingredients.map((ingredient) => ingredient._id),
       bun._id
     ];
-    if (!isLoggedIn) {
+    if (!user) {
       return navigate('/login');
     }
     dispatch(createOrder(ingredientIds));
