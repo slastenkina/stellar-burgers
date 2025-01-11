@@ -109,6 +109,7 @@ const userSlice = createSlice({
         state.loading = false;
         state.isAuthenticated = true;
         state.isLoggedIn = true;
+        state.user = action.payload.user;
       })
       .addCase(fetchRegisterUser.rejected, (state, action) => {
         state.loading = false;

@@ -16,6 +16,10 @@ const config: Config = {
 
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {}]
+  },
+  moduleNameMapper: {
+    '@api': '<rootDir>/src/utils/burger-api.ts',
+    '@utils-types': '<rootDir>/src/utils/types/auth.ts'
   }
 };
 
