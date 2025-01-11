@@ -1,7 +1,7 @@
 import { FC, SyntheticEvent, useState } from 'react';
 import { RegisterUI } from '@ui-pages';
 import { useDispatch, useSelector, RootState } from '../../services/store';
-import { fetchRegisterUser } from '../../slices/burgersSlice';
+import { fetchRegisterUser } from '../../slices/user';
 import { Preloader } from '@ui';
 import { useForm } from '../../hooks/useForm';
 
@@ -12,7 +12,7 @@ export const Register: FC = () => {
     password: ''
   });
 
-  const { error, loading } = useSelector((state: RootState) => state.data);
+  const { error, loading } = useSelector((state: RootState) => state.user);
   const dispatch = useDispatch();
 
   const [localError, setLocalError] = useState<string | null>(null); // Локальное состояние для ошибок

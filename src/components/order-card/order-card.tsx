@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 
 import { OrderCardProps } from './type';
 import { TIngredient } from '@utils-types';
-import { OrderCardUI } from '../ui/order-card';
+import { OrderCardUI } from '@ui';
 import { useSelector } from '../../services/store';
 
 const maxIngredients = 6;
@@ -13,7 +13,7 @@ export const OrderCard: FC<OrderCardProps> = memo(({ order }) => {
 
   // Получаем список всех ингредиентов из состояния
   const ingredients: TIngredient[] = useSelector(
-    (state) => state.data.ingredient
+    (state) => state.ingredients.ingredient
   );
 
   const orderInfo = useMemo(() => {
@@ -21,7 +21,9 @@ export const OrderCard: FC<OrderCardProps> = memo(({ order }) => {
 
     const ingredientsInfo = order.ingredients.reduce(
       (acc: TIngredient[], item: string) => {
-        const ingredient = ingredients.find((ing) => ing._id === item);
+        const ingredient = ingredients.find(
+          (ingredient) => ingredient._id === item
+        );
         if (ingredient) return [...acc, ingredient];
         return acc;
       },

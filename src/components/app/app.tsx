@@ -23,23 +23,17 @@ import {
   ProtectedRoute
 } from '@components';
 
-import { useDispatch, useSelector } from '../../services/store';
+import { useDispatch } from '../../services/store';
 
-import {
-  fetchIngredients,
-  fetchFeeds,
-  isLoggedIn,
-  checkUserAuth
-} from '../../slices/burgersSlice';
-import { getCookie, deleteCookie } from '../../utils/cookie';
+import { fetchIngredients } from '../../slices/ingredients';
+
+import { checkUserAuth } from '../../slices/user';
 
 export const App: React.FC = () => {
   const dispatch = useDispatch();
   const location = useLocation();
   const navigate = useNavigate();
   const backgroundLocation = location.state?.background;
-  const token = getCookie('accessToken');
-  const isAuthenticated = useSelector((state) => state.data.isAuthenticated);
 
   const handleModalClose = () => {
     navigate(-1);

@@ -1,11 +1,11 @@
 import { FC, SyntheticEvent, useEffect } from 'react';
 import { LoginUI } from '@ui-pages';
 import { useDispatch, useSelector, RootState } from '../../services/store';
-import { fetchLoginUser, checkUserAuth } from '../../slices/burgersSlice';
+import { fetchLoginUser, checkUserAuth } from '../../slices/user';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Preloader } from '@ui';
 import { useForm } from '../../hooks/useForm';
-import { setCookie, getCookie } from '../../utils/cookie';
+import { setCookie } from '../../utils/cookie';
 
 export const Login: FC = () => {
   const location = useLocation();
@@ -17,7 +17,7 @@ export const Login: FC = () => {
 
   const dispatch = useDispatch();
   const { error, loading, isLoggedIn, isAuthenticated } = useSelector(
-    (state: RootState) => state.data
+    (state: RootState) => state.user
   );
 
   // Проверяем авторизацию при загрузке компонента
