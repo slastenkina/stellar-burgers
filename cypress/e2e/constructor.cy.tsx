@@ -22,16 +22,29 @@ describe('Burger Constructor', () => {
     cy.get('[data-testid="constructor-bun"]').should('exist'); // Убедимся, что булка добавлена
   });
 
-  it('Должен открывать и закрывать модальное окно ингредиента', () => {
-    // Кликаем на первый ингредиент
-    cy.get('[data-testid="bun"]').first().click();
+  it('Должен открывать модальное окно с правильным ингредиентом и закрывать его', () => {
+    // Выбираем первый ингредиент
+    cy.get('[data-testid="bun"]').first().as('selectedIngredient');
 
-    // Проверяем, что в контейнере с модальными окнами есть хотя бы 1 дочерний элемент (модальное окно открылось)
-    cy.get('#modals').children().should('have.length.greaterThan', 0);
+    // Извлекаем название ингредиента из карточки
+    cy.get('@selectedIngredient')
+      .find('.text_type_main-default')
+      .invoke('text')
+      .then((ingredientName: string) => {
+        // Кликаем на выбранный ингредиент
+        cy.get('@selectedIngredient').click();
 
-    // Закрытие по кнопке "крестик"
-    cy.get('#modals button:first-of-type').click();
-    cy.get('#modals').children().should('have.length', 0);
+        // Проверяем, что модальное окно открылось и содержит корректное название
+        cy.get('#modals')
+          .find('.text_type_main-medium')
+          .should('contain.text', ingredientName);
+
+        // Закрываем модальное окно кнопкой "крестик"
+        cy.get('#modals button:first-of-type').click();
+
+        // Проверяем, что модальное окно закрыто
+        cy.get('#modals').children().should('have.length', 0);
+      });
   });
 
   it('Должен закрывать модальное окно по клику на оверлей', () => {

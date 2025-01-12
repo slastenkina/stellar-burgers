@@ -17,7 +17,7 @@ export const OrderInfo: FC = () => {
 
   useEffect(() => {
     if (!orderData && params.number) {
-      dispatch(fetchOrder(Number(params)));
+      dispatch(fetchOrder(Number(params.number)));
     }
   }, [orderData, params.number, dispatch]);
 
@@ -34,7 +34,9 @@ export const OrderInfo: FC = () => {
     const ingredientsInfo = orderData.ingredients.reduce(
       (acc: TIngredientsWithCount, item) => {
         if (!acc[item]) {
-          const ingredient = ingredients.find((ing) => ing._id === item);
+          const ingredient = ingredients.find(
+            (ingredient) => ingredient._id === item
+          );
           if (ingredient) {
             acc[item] = {
               ...ingredient,
