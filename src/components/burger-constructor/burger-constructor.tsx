@@ -1,10 +1,7 @@
 import { FC, useMemo, useEffect } from 'react';
-import {
-  fetchIngredients,
-  createOrder,
-  resetConstructor,
-  resetOrderModalData
-} from '../../slices/burgersSlice';
+import { fetchIngredients } from '../../slices/ingredients'; // Загрузка ингредиентов
+import { createOrder, resetOrderModalData } from '../../slices/orders'; // Работа с заказом
+import { resetConstructor } from '../../slices/constructor'; // Сброс конструктора
 import { TConstructorIngredient } from '@utils-types';
 import { BurgerConstructorUI } from '@ui';
 import { RootState, useDispatch, useSelector } from '../../services/store'; // Импортируем тип состояния
@@ -16,21 +13,14 @@ export const BurgerConstructor: FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Селектор для данных
-  const { bun, ingredients, loading, error, orderRequest, orderModalData } =
-    useSelector((state: RootState) => ({
-      bun: state.data.bun,
-      ingredients: state.data.ingredients,
-      loading: state.data.loading,
-      error: state.data.error,
-      orderRequest: state.data.orderRequest,
-      orderModalData: state.data.orderModalData
-    }));
-
   // Переменные для структурирования
-  const constructorItems = { bun, ingredients }; // Все ингредиенты для конструктора
+  const constructorItems = useSelector((state: RootState) => state.burger);
 
-  const isLoggedIn = useSelector((state) => !!state.data.isLoggedIn);
+  const user = useSelector((state) => state.user.user);
+
+  const { orderRequest, orderModalData } = useSelector((state) => state.orders);
+
+  const { loading, error } = useSelector((state) => state.ingredients);
 
   useEffect(() => {
     // Загружаем ингредиенты при монтировании компонента
@@ -38,13 +28,13 @@ export const BurgerConstructor: FC = () => {
   }, [dispatch]);
 
   const onOrderClick = () => {
-    if (!bun || loading) return;
+    if (!constructorItems.bun || orderRequest) return;
     const ingredientIds = [
-      bun._id,
-      ...ingredients.map((ingredient) => ingredient._id),
-      bun._id
+      constructorItems.bun._id,
+      ...constructorItems.ingredients.map((ingredient) => ingredient._id),
+      constructorItems.bun._id
     ];
-    if (!isLoggedIn) {
+    if (!user) {
       return navigate('/login');
     }
     dispatch(createOrder(ingredientIds));
@@ -56,17 +46,17 @@ export const BurgerConstructor: FC = () => {
   };
 
   const price = useMemo(() => {
-    const bunPrice = bun ? bun.price * 2 : 0;
-    const ingredientsPrice = ingredients.reduce(
+    const bunPrice = constructorItems.bun ? constructorItems.bun.price * 2 : 0;
+    const ingredientsPrice = constructorItems.ingredients.reduce(
       (sum: number, ingredient: TConstructorIngredient) =>
         sum + ingredient.price,
       0
     );
     return bunPrice + ingredientsPrice;
-  }, [bun, ingredients]);
+  }, [constructorItems]);
 
   // Показываем индикатор загрузки, пока идет запрос
-  if (loading && ingredients.length === 0) {
+  if (loading && constructorItems.ingredients.length === 0) {
     return <Preloader />;
   }
 

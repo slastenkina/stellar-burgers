@@ -1,30 +1,23 @@
 import { FC, useMemo, useEffect } from 'react';
-import { Preloader } from '../ui/preloader';
-import { OrderInfoUI } from '../ui/order-info';
+import { Preloader, OrderInfoUI } from '@ui';
 import { TIngredient } from '@utils-types';
-import { useParams, redirect } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from '../../services/store';
-import { fetchOrder } from '../../slices/burgersSlice';
+import { fetchOrder } from '../../slices/orders';
 
 export const OrderInfo: FC = () => {
   const params = useParams<{ number: string }>();
   const dispatch = useDispatch();
 
-  // Данные из хранилища
-  // const orders = useSelector((state) => state.data.orders);
-  // const orderData = orders.find(
-  //   (item) => item.number === parseInt(params.number!)
-  // );
-
-  const orderData = useSelector((state) => state.data.order);
+  const orderData = useSelector((state) => state.orders.order);
 
   const ingredients: TIngredient[] = useSelector(
-    (state) => state.data.ingredient
+    (state) => state.ingredients.ingredient
   );
 
   useEffect(() => {
     if (!orderData && params.number) {
-      dispatch(fetchOrder(Number(params)));
+      dispatch(fetchOrder(Number(params.number)));
     }
   }, [orderData, params.number, dispatch]);
 
@@ -41,7 +34,9 @@ export const OrderInfo: FC = () => {
     const ingredientsInfo = orderData.ingredients.reduce(
       (acc: TIngredientsWithCount, item) => {
         if (!acc[item]) {
-          const ingredient = ingredients.find((ing) => ing._id === item);
+          const ingredient = ingredients.find(
+            (ingredient) => ingredient._id === item
+          );
           if (ingredient) {
             acc[item] = {
               ...ingredient,

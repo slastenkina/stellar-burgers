@@ -2,14 +2,16 @@ import { ProfileOrdersUI } from '@ui-pages';
 import { TOrder } from '@utils-types';
 import { FC, useEffect } from 'react';
 import { useDispatch, useSelector } from '../../services/store';
-import { fetchOrders } from '../../slices/burgersSlice';
+import { fetchOrders } from '../../slices/orders';
 import { Preloader } from '@ui';
 
 export const ProfileOrders: FC = () => {
   const dispatch = useDispatch();
-  const orders = useSelector((state) => state.data.orders); // Список заказов
-  const loading = useSelector((state) => state.data.loading); // Статус загрузки
-  const error = useSelector((state) => state.data.error); // Ошибка, если есть
+  const {
+    orders: orders,
+    loading: loading,
+    error
+  } = useSelector((state) => state.orders);
 
   useEffect(() => {
     // Диспатчим действие для получения заказов при монтировании компонента

@@ -1,5 +1,5 @@
 // Компонент для защиты маршрутов
-import { FC } from 'react';
+import React, { FC } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from '../../services/store';
 import { Preloader } from '@ui';
@@ -13,8 +13,8 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
   children,
   anonymous = false
 }) => {
-  const isLoggedIn = useSelector((state) => state.data.user);
-  const isAuthenticated = useSelector((state) => state.data.isAuthenticated);
+  const isLoggedIn = useSelector((state) => state.user.user);
+  const isAuthenticated = useSelector((state) => state.user.isAuthenticated);
   const location = useLocation();
   const from = location.state?.from || '/';
 

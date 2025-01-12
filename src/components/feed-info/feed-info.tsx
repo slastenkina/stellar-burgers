@@ -1,7 +1,7 @@
 import { FC } from 'react';
 
 import { TOrder } from '@utils-types';
-import { FeedInfoUI } from '../ui/feed-info';
+import { FeedInfoUI } from '@ui';
 import { useSelector } from '../../services/store';
 
 const getOrders = (orders: TOrder[], status: string): number[] =>
@@ -13,9 +13,9 @@ const getOrders = (orders: TOrder[], status: string): number[] =>
 export const FeedInfo: FC = () => {
   // Получаем данные о заказах
   const { orders, total, totalToday } = useSelector((state) => ({
-    orders: state.data.orders,
-    total: state.data.totalOrders,
-    totalToday: state.data.totalToday
+    orders: state.feeds.orders,
+    total: state.feeds.totalOrders,
+    totalToday: state.feeds.totalToday
   }));
 
   // Фильтруем заказы по статусам
